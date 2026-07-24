@@ -7482,12 +7482,15 @@ function candidateProgramsForBank(bankId){
 // ==================== bank autocomplete (تصفح البطاقات → البنك) ====================
 // يحل مكان نمط "رقائق + زر المزيد يفتح sheet": حقل بحث حقيقي (typeahead) — يكتب المستخدم
 // بالحقل مباشرة، تظهر قائمة منسدلة بالنتائج المطابقة تحته فورًا، يضغط فيختار.
+function normalizeArabicSearch(s){
+  return s.replace(/[أإآ]/g, 'ا');
+}
 function bankAutocompleteItems(query){
   const q = query.trim();
   const allowedByLoyalty = candidateBanksForLoyalty(state.browse.loyalty);
   return CARD_DB.banks
     .filter(b=> !allowedByLoyalty || allowedByLoyalty.has(b.id))
-    .filter(b=> !q || b.ar.includes(q) || b.en.toLowerCase().includes(q.toLowerCase()))
+    .filter(b=> !q || normalizeArabicSearch(b.ar).includes(normalizeArabicSearch(q)) || b.en.toLowerCase().includes(q.toLowerCase()))
     .map(b=>({
       bank:b,
       count: CARD_DB.cards.filter(c=>c.bankId===b.id && (!state.browse.loyalty || c.loyaltyProgram===state.browse.loyalty)).length
