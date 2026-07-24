@@ -7167,6 +7167,32 @@ function computeForCard(card, categoryId, amount){
   return null;
 }
 
+// ==================== المرحلة 3: تطبيع العائد لقيمة SAR (كاش باك فقط) ====================
+// الكاش باك محسوب أصلًا بالريال 1:1 (amount*pct/100) — قيمة حقيقية مباشرة، لا تقديرية.
+// لكن مقارنتها رقميًا بنقاط/أميال خام (10 ريال مقابل 500 نقطة) مضلِّلة: العدد الأكبر
+// ليس بالضرورة القيمة الأعلى فعليًا بلا جدول تقييم نقاط/أميال (خارج نطاق هذي المرحلة
+// بقرار مُقفل). الحل: تجميع أي قائمة نتائج حسب الوحدة الحقيقية بدل فرزها رقميًا سوا —
+// كاش باك دائمًا مجموعة مستقلة بالمقدمة، وكل وحدة نقاط/أميال بمجموعتها الخاصة.
+function groupRowsByUnit(rows){
+  const groups = {};
+  const order = [];
+  rows.forEach(x=>{
+    const key = x.r.cashback ? '__cashback__' : x.r.unit;
+    if(!groups[key]){ groups[key]=[]; order.push(key); }
+    groups[key].push(x);
+  });
+  order.sort((a,b)=> a==='__cashback__' ? -1 : (b==='__cashback__' ? 1 : 0));
+  return order.map(key=>({ isCashback:key==='__cashback__', unit:key, rows:groups[key] }));
+}
+function appendCashbackBadgeIfNeeded(wrap, group){
+  if(!group.isCashback) return;
+  const badge=document.createElement('div');
+  badge.className='info-note';
+  badge.style.cssText='font-weight:600;color:var(--accent);margin:4px 0 2px;';
+  badge.textContent='💰 كاش باك — عائد ريال حقيقي ومباشر، غير قابل للمقارنة الرقمية بنقاط/أميال أدناه';
+  wrap.appendChild(badge);
+}
+
 // بطاقات "بدون مكافآت" (برق، D360، موبايلي باي...) — منتج مختلف كليًا عن بطاقات الاكتساب:
 // قيمتها تجنّب رسوم الصرف، مو تجميع نقاط/أميال. كانت غائبة تمامًا من كل شاشات الحاسبة
 // (calcTier:'unavailable' يستبعدها من eligibleCardsForCalc) رغم أنها معلومة مفيدة للمستخدم —
@@ -7274,12 +7300,11 @@ function renderCalcResults(){
       title.className='result-section-title';
       title.innerHTML='<span class="dot estimated"></span><h3>معدل عام معلن — محلي/دولي، وليس حسب الفئة تحديدًا</h3>';
       wrap.appendChild(title);
-      const groups = {};
-      estRows.forEach(x=>{ const u=x.r.unit; (groups[u]=groups[u]||[]).push(x); });
       const GROUP_CAP = 10;
-      Object.keys(groups).forEach(unit=>{
-        const g = groups[unit];
+      groupRowsByUnit(estRows).forEach(group=>{
+        const g = group.rows;
         g.sort((a,b)=>b.r.value-a.r.value);
+        appendCashbackBadgeIfNeeded(wrap, group);
         const groupWrap = document.createElement('div');
         wrap.appendChild(groupWrap);
         g.slice(0, GROUP_CAP).forEach((x,i)=>groupWrap.appendChild(makeResultRow(x.card, x.r, i+1)));
@@ -7345,14 +7370,21 @@ function isPureMilesType(card){
   const hasPoints = card.rewardType.includes('نقاط') || card.rewardType.includes('نقطة');
   return hasMiles && !hasPoints;
 }
+// بطاقة كاش باك (تقديري، genericLocalRate.kind==='cashback_pct') قيمتها ريال حقيقي
+// مباشر — لا يصح دمجها بترتيب رقمي واحد مع نقاط/أميال (بند المرحلة 3).
+function isCashbackCard(card){
+  return card.calcTier==='estimated' && card.genericLocalRate && card.genericLocalRate.kind==='cashback_pct';
+}
 function renderSaudiaResults(wrap, amount, pool, feeOnlyPool){
-  // split by reward currency: miles vs points/cashback
+  // split by reward currency: miles vs points vs cashback (كل وحدة بقسمها المستقل)
   // pool اختياري: يسمح لحاسبة المفضلة باستخدام نفس منطق التصنيف على بطاقاتها الخمس فقط
   const basePool = pool || eligibleCardsForCalc();
   const milesCards = basePool.filter(isPureMilesType);
-  const pointsCards = basePool.filter(c=> !isPureMilesType(c) && (cardMatchesRewardBucket(c,'نقاط') || cardMatchesRewardBucket(c,'كاش باك') || cardMatchesRewardBucket(c,'أميال')));
+  const rewardsPool = basePool.filter(c=> !isPureMilesType(c) && (cardMatchesRewardBucket(c,'نقاط') || cardMatchesRewardBucket(c,'كاش باك') || cardMatchesRewardBucket(c,'أميال')));
+  const cashbackCards = rewardsPool.filter(isCashbackCard);
+  const pointsCards = rewardsPool.filter(c=> !isCashbackCard(c));
 
-  function section(list, title, dotClass){
+  function section(list, title, dotClass, isCashbackSection){
     // نفس منطق استبعاد الحاسبة العامة: بطاقة "مستبعدة" (rate=0) لا تدخل الترتيب —
     // حتى لو كانت البطاقة الدقيقة، لأن ترتيبها التلقائي بالمقدمة (calcTier==='precise')
     // كان سيُزيح بطاقة تقديرية أعلى قيمة فعليًا من قائمة Top-5 بدون داعٍ.
@@ -7370,6 +7402,7 @@ function renderSaudiaResults(wrap, amount, pool, feeOnlyPool){
       const empty=document.createElement('div'); empty.className='empty-state'; empty.textContent='لا تتوفر بيانات كافية حاليًا.';
       wrap.appendChild(empty); return;
     }
+    if(isCashbackSection) appendCashbackBadgeIfNeeded(wrap, {isCashback:true});
     top5.forEach((x,i)=>wrap.appendChild(makeResultRow(x.card, x.r, i+1)));
   }
   section(milesCards, 'أفضل 5 — أميال (على الخطوط السعودية)', 'precise');
@@ -7378,7 +7411,9 @@ function renderSaudiaResults(wrap, amount, pool, feeOnlyPool){
   note.textContent='البطاقة الوحيدة بمعدل خاص مؤكد لتجار الخطوط السعودية تحديدًا هي فيزا الفرسان إنفينيت (الراجحي) — بقية بطاقات الفرسان تُقدَّر بمعدلها المحلي العام (وليس الدولي)، لأن حجز السعودية بالريال من داخل المملكة يُعامَل محليًا من شبكة البطاقة ما لم يوجد شرط خاص موثّق مثل الراجحي.';
   wrap.appendChild(note);
   wrap.appendChild(document.createElement('hr')).className='result-divider';
-  section(pointsCards, 'أفضل 5 — نقاط / مكافآت / كاش باك', 'gold');
+  section(cashbackCards, 'أفضل 5 — كاش باك (ريال حقيقي)', 'gold', true);
+  wrap.appendChild(document.createElement('hr')).className='result-divider';
+  section(pointsCards, 'أفضل 5 — نقاط ومكافآت (غير قابلة للمقارنة المباشرة بالريال)', 'gold');
   renderFeeOnlyCardsSection(wrap, feeOnlyPool || CARD_DB.cards, 'saudia');
 }
 
@@ -7871,9 +7906,14 @@ function renderFavCalcResults(){
     const rows = favCards
       .map(c=>({card:c, r:computeForCard(c, categoryId, amount)}))
       .filter(x=>x.r && !x.r.excluded);
-    rows.sort((a,b)=>b.r.value-a.r.value);
     if(rows.length){
-      rows.forEach((x,i)=>wrap.appendChild(makeResultRow(x.card, x.r, i+1)));
+      // مجمّعة حسب الوحدة الحقيقية (كاش باك مستقل عن نقاط/أميال) — بند المرحلة 3،
+      // نفس منطق الحاسبة العامة، لمنع فرز رقمي مضلِّل بين وحدات مختلفة.
+      groupRowsByUnit(rows).forEach(group=>{
+        group.rows.sort((a,b)=>b.r.value-a.r.value);
+        appendCashbackBadgeIfNeeded(wrap, group);
+        group.rows.forEach((x,i)=>wrap.appendChild(makeResultRow(x.card, x.r, i+1)));
+      });
       if(cat.genericType==='special'){
         const warn=document.createElement('div');
         warn.className='warn-banner';
