@@ -368,9 +368,9 @@ h1,h2,h3{ margin:0; color:var(--brand); }
 
   <!-- ===================== HOME / PERSONA SCREEN ===================== -->
   <div class="view" id="view-home">
-    <input class="search-box" id="homeSearch" placeholder="🔍 ابحث عن بطاقة، بنك، أو برنامج ولاء...">
-    <div id="homeSuggestions"></div>
     <div class="home-greeting" id="homeGreetingWrap">وش تبغى تسوي اليوم؟</div>
+    <input class="search-box" id="homeSearch" style="margin-top:12px;" placeholder="🔍 ابحث عن بطاقة، بنك، أو برنامج ولاء...">
+    <div id="homeSuggestions"></div>
     <div class="persona-list" id="personaListWrap">
       <button class="persona-btn" data-persona="rewards">
         <span class="icon">🏆</span>
@@ -382,8 +382,12 @@ h1,h2,h3{ margin:0; color:var(--brand); }
       </div>
       <button class="persona-btn" data-persona="cost">
         <span class="icon">✈️</span>
-        <span><span class="title">سفر بره السعودية — أبغى أقل رسوم</span><br><span class="sub">بطاقات بصفر (أو أقل) رسوم دولية وسحب نقدي</span></span>
+        <span><span class="title">سفر خارج السعودية — كيف أوفّر؟</span><br><span class="sub">أعلى عائد على إنفاقك بالخارج، أو أقل رسوم ممكنة</span></span>
       </button>
+      <div class="persona-subchoice hidden" id="costSubchoice">
+        <button id="costByReward">🏆 أعلى عائد</button>
+        <button id="costByFee">💰 أقل تكلفة</button>
+      </div>
       <button class="persona-btn" data-persona="bank">
         <span class="icon">🏦</span>
         <span><span class="title">عندي حساب في بنك معيّن</span><br><span class="sub">ورّني كل بطاقات بنكي</span></span>
@@ -394,7 +398,7 @@ h1,h2,h3{ margin:0; color:var(--brand); }
       </button>
       <button class="persona-btn" data-persona="explore">
         <span class="icon">📋</span>
-        <span><span class="title">بس أبغى أتصفح كل البطاقات</span><br><span class="sub">بدون فلاتر مسبقة</span></span>
+        <span><span class="title">تصفح جميع البطاقات للبنوك السعودية</span><br><span class="sub">بدون فلاتر مسبقة</span></span>
       </button>
     </div>
   </div>
@@ -508,11 +512,11 @@ h1,h2,h3{ margin:0; color:var(--brand); }
   <div class="modal-sheet disclaimer-detail">
     <div class="modal-header"><h2>إخلاء المسؤولية</h2><button class="modal-close" id="disclaimerModalClose" aria-label="إغلاق">✕</button></div>
     <p>هذه الأداة مرجع معلوماتي لمقارنة بطاقات ائتمانية سعودية بناءً على بيانات مُجمَّعة من مواقع البنوك الرسمية وقت آخر مراجعة — وهي <b>ليست</b> نصيحة مالية ولا تُغني عن التحقق من الشروط والأحكام الرسمية للبنك مباشرة قبل أي تقديم فعلي.</p>
-    <h3>الأرقام تقديرية أحيانًا</h3>
-    <p>البطاقات الموسومة "دقيق" مبنية على بيانات مؤكدة حسب فئة الصرف تحديدًا. باقي البطاقات ("معدل عام معلن") تعتمد على معدل عام محلي/دولي معلن رسميًا من البنك، وليس رقمًا خاصًا بفئة الصرف — قد لا يعكس شروطًا خاصة بتاجر معيّن أو حدًا أقصى للاكتساب.</p>
+    <h3>مستويان من دقة البيانات</h3>
+    <p>البطاقات الموسومة "دقيق" مبنية على بيانات مؤكدة من الشروط والأحكام الرسمية حسب فئة الصرف. البطاقات الموسومة "معدل عام معلن" تعتمد على المعدل العام المعلن من البنك (محلي/دولي)، وليس رقمًا خاصًا بكل فئة — نراجع البيانات دوريًا مع توسّع تغطية "دقيق" لبطاقات إضافية.</p>
     <h3>السحب النقدي سلفة، وليس شراء</h3>
     <p>السحب النقدي ببطاقة الائتمان يُعامَل غالبًا كسلفة نقدية فورية الربح (بدون فترة سماح) مع رسوم نسبية منفصلة — بعكس المشتريات العادية. لا تعتمد على "0% رسوم دولية" كضمان لتكلفة سحب صفرية.</p>
-    <h3>خطر السداد الأدنى فقط</h3>
+    <h3>خطورة سداد الحد الأدنى</h3>
     <p>سداد الحد الأدنى فقط شهريًا يُبقي الرصيد المتبقي خاضعًا لمعدل ربح/فائدة مرتفع نسبيًا (غالبًا فوق 30% سنويًا حسب البطاقة) — يُفضَّل سداد كامل المستحقات كل شهر لتفادي ذلك تمامًا.</p>
     <h3>مستوى العميل تصنيف تسويقي فقط</h3>
     <p>تصنيف "عادي/مميز" هنا مبني على اسم فئة البطاقة التسويقي من موقع البنك (Platinum مقابل Infinite مثلاً) — وليس تأكيدًا لشروط الأهلية الفعلية. بعض بطاقات "Infinite" تتطلب عميل خاص (Private Banking) مسبقًا، وبعضها مفتوح لأي عميل يستوفي حد الدخل. راجع البنك مباشرة لتأكيد أهليتك.</p>
@@ -638,7 +642,7 @@ const CARD_DB = {
     },
     {
       "id": "D360",
-      "ar": "بنك D360",
+      "ar": "بنك D360 (دي 360)",
       "en": "D360 Bank",
       "type": "digital_bank"
     },
@@ -6689,14 +6693,35 @@ document.querySelectorAll('.tabs .tab-btn').forEach(btn=>{
 });
 
 // ==================== PERSONA / HOME SCREEN ====================
+// دخول "حسب بند الصرف" لازم يصفّر أي فئة اختارها المستخدم بجلسة سابقة — قبل هذا
+// الإصلاح كانت الفئة القديمة (مثلاً "سيارات") تفضل معلّقة بالحالة وتظهر تلقائيًا
+// وكأن الأداة اختارتها بالنيابة عن المستخدم، رغم وعد الشخصية بسؤاله أولًا.
 document.getElementById('rewardsBySpend').addEventListener('click', (e)=>{
   e.stopPropagation();
-  state.calc.mode='reward'; state.calc.program=null; state.calc.presetProgram=null;
-  syncModeUI(); showScreen('calc');
+  state.calc.mode='reward'; state.calc.categoryId=null; state.calc.program=null;
+  state.calc.presetProgram=null; state.calc.openGroupId=null;
+  document.getElementById('calcStep2').classList.add('hidden');
+  document.getElementById('programPresetWrap').classList.add('hidden');
+  syncModeUI(); showScreen('calc'); renderCategoryTiles();
 });
 document.getElementById('rewardsByProgram').addEventListener('click', (e)=>{
   e.stopPropagation();
   showProgramPresetPicker();
+});
+// "سفر خارج السعودية" كان يفرض وضع "أقل تكلفة" مباشرة بلا تخيير — بعض المسافرين
+// يفضّلون تعظيم الأميال/النقاط على رحلاتهم بدل تصفير الرسوم. الآن يعرض نفس نمط
+// الاختيار الفرعي المستخدم بـ"أميال ونقاط" (بطاقتان: أعلى عائد / أقل تكلفة).
+document.getElementById('costByReward').addEventListener('click', (e)=>{
+  e.stopPropagation();
+  state.calc.mode='reward'; state.calc.categoryId=null; state.calc.program=null;
+  state.calc.presetProgram=null; state.calc.openGroupId=null;
+  document.getElementById('calcStep2').classList.add('hidden');
+  syncModeUI(); showScreen('calc'); renderCategoryTiles();
+});
+document.getElementById('costByFee').addEventListener('click', (e)=>{
+  e.stopPropagation();
+  state.calc.mode='cost'; state.calc.costSubTab='intl';
+  syncModeUI(); showScreen('calc');
 });
 document.querySelectorAll('.persona-btn').forEach(btn=>{
   btn.addEventListener('click', (e)=>{
@@ -6706,8 +6731,8 @@ document.querySelectorAll('.persona-btn').forEach(btn=>{
       return;
     }
     if(persona==='cost'){
-      state.calc.mode='cost'; state.calc.costSubTab='intl';
-      syncModeUI(); showScreen('calc');
+      document.getElementById('costSubchoice').classList.toggle('hidden');
+      return;
     } else if(persona==='bank'){
       // كان هذا المسار يفتح تصفح البطاقات بلا أي تصفية فعلية (168 نتيجة كاملة) رغم
       // وعده "ورّني كل بطاقات بنكي" — الآن يفتح شيت اختيار البنك مباشرة، وبعد
@@ -6721,9 +6746,20 @@ document.querySelectorAll('.persona-btn').forEach(btn=>{
         showScreen('browse'); renderAllBrowseFacets();
       });
     } else if(persona==='premium'){
-      resetBrowseFilters();
-      state.browse.segment='مميز';
-      showScreen('browse'); renderAllBrowseFacets();
+      // نفس منطق شخصية "بنكي": "عميل مميز" بمعنى عميل مميز ببنك مُعيّن يعرفه —
+      // عرض كل بطاقات "مميز" من كل البنوك دفعة وحدة كان يُضيّع المستخدم. الآن
+      // يختار بنكه أولًا (مع خيار "كل البنوك" صريح لمن يبغى يتصفّح الكل فعلًا).
+      const premiumCards = CARD_DB.cards.filter(c=>c.customerSegment==='مميز');
+      const counts = {};
+      premiumCards.forEach(c=>{ counts[c.bankId]=(counts[c.bankId]||0)+1; });
+      const items = [{key:null, label:'كل البنوك', count:premiumCards.length}]
+        .concat(CARD_DB.banks.filter(b=>counts[b.id]).map(b=>({key:b.id, label:b.ar, count:counts[b.id]})));
+      openPickerSheet('بطاقات مميّزة — اختر بنكك', items, null, (bankId)=>{
+        resetBrowseFilters();
+        state.browse.bank = bankId;
+        state.browse.segment='مميز';
+        showScreen('browse'); renderAllBrowseFacets();
+      });
     } else if(persona==='explore'){
       resetBrowseFilters();
       showScreen('browse'); renderAllBrowseFacets();
@@ -6774,7 +6810,16 @@ function renderHomeSuggestions(q){
   const ql = q.toLowerCase();
 
   const progMatches = {};
-  CARD_DB.cards.forEach(c=>{ if(c.loyaltyProgram && c.loyaltyProgram.toLowerCase().includes(ql)) progMatches[c.loyaltyProgram]=(progMatches[c.loyaltyProgram]||0)+1; });
+  // نطابق أيضًا على الاسم المُعرَّب المختصر (مثال: "سكاي واردز") مو بس النص الخام
+  // المخزّن أحيانًا بمصطلحات إنجليزية ("شراكة Emirates Skywards") — غير كذا يفشل
+  // بحث المستخدم العربي عن برامج أسماؤها الخام إنجليزية جزئيًا أو كليًا.
+  CARD_DB.cards.forEach(c=>{
+    if(!c.loyaltyProgram) return;
+    const shortAr = shortenProgramName(c.loyaltyProgram);
+    if(c.loyaltyProgram.toLowerCase().includes(ql) || (shortAr && shortAr.toLowerCase().includes(ql))){
+      progMatches[c.loyaltyProgram]=(progMatches[c.loyaltyProgram]||0)+1;
+    }
+  });
   const bankMatches = CARD_DB.banks.filter(b=>b.ar.toLowerCase().includes(ql)||b.en.toLowerCase().includes(ql));
   const cardMatches = CARD_DB.cards.filter(c=>c.name.toLowerCase().includes(ql)||bankName(c).toLowerCase().includes(ql)).slice(0,12);
 
@@ -7010,7 +7055,7 @@ function shortenProgramName(name){
   if(name.includes('Jana')) return 'Jana';
   if(name.includes('anb')) return 'مكافآت anb';
   if(name.includes('ترافل باس')) return 'ترافل باس';
-  if(name.includes('Skywards')) return 'Skywards';
+  if(name.includes('Skywards')) return 'سكاي واردز';
   if(name.includes('Qatar Airways')) return 'Qatar Airways';
   if(name.includes('Marriott')) return 'Marriott Bonvoy';
   if(name.includes('ناسمايلز')) return 'ناسمايلز';
@@ -7286,7 +7331,7 @@ function renderCalcResults(){
     const note=document.createElement('div');
     note.className='info-note';
     if(cat.id==='cash_withdrawal'){
-      note.textContent='السحب النقدي لا يكتسب نقاط أو أميال بمعظم بطاقات الائتمان تقريبًا (يُعامل كسلفة نقدية وليس عملية شراء) — لا نعرض تقديرًا لباقي البطاقات لعدم توفر تأكيد صريح لكل بطاقة.';
+      note.textContent='السحب النقدي لا يكتسب نقاط أو أميال بمعظم بطاقات الائتمان — يُعامَل كسلفة نقدية وليس عملية شراء، حسب سياسة البنك المُصدر للبطاقة وسياسة البنك المركزي السعودي (ساما). لا نعرض تقديرًا لباقي البطاقات لعدم توفر تأكيد صريح لكل بطاقة.';
     } else {
       note.textContent='هذا بند مُحدَّد بشروط خاصة (تاجر معيّن أو حد أقصى) — لا تتوفر بيانات دقيقة له إلا للبطاقة الموثقة بالكامل أعلاه. باقي البطاقات لا تُعرض هنا تفاديًا لتقدير غير موثوق.';
     }
@@ -7734,6 +7779,28 @@ function tierBadge(tier){
   if(tier==='estimated') return '<span class="badge estimated">معدل عام</span>';
   return '<span class="badge unavailable">غير موثّق</span>';
 }
+// شارات بطاقة العرض — الشبكة معرّبة، وفئة البطاقة الحقيقية (إنفينيت/بلاتينيوم/سيجنتشر...)
+// بدل تصنيف "مميز" العام. لو قيمة tier غير معروفة أو بيانات غير نظيفة (ملاحظة نصية
+// تسرّبت للحقل مثلاً)، نتراجع لشارة "مميز"/"عادي" بدل عرض نص غير موثوق للمستخدم.
+const NETWORK_AR = {'Visa':'فيزا','Mastercard':'ماستركارد','mada':'مدى','UnionPay':'يونيون باي','American Express':'أمريكان إكسبريس'};
+function networkLabel(network){
+  return network && NETWORK_AR[network] ? NETWORK_AR[network] : (network || null);
+}
+const TIER_AR = {
+  'Infinite':'إنفينيت','Platinum':'بلاتينيوم','Signature':'سيجنتشر','World':'وورلد',
+  'World Elite':'وورلد إيليت','Gold':'ذهبية','Silver':'فضية','Titanium':'تيتانيوم',
+  'Classic':'كلاسيك','Basic':'أساسية','Premier':'بريمير','Selective':'سيليكتيف',
+  'Private Banking':'الخدمات المصرفية الخاصة','Prepaid':'مسبقة الدفع',
+  'Multi-Currency':'متعددة العملات','Low-Limit':'حد ائتماني منخفض'
+};
+function cardTierLabel(card){
+  return card.tier && TIER_AR[card.tier] ? TIER_AR[card.tier] : null;
+}
+function tierOrSegmentBadgeHTML(card){
+  const label = cardTierLabel(card);
+  if(label) return '<span class="badge'+(card.customerSegment==='مميز'?' premium':'')+'">'+label+'</span>';
+  return card.customerSegment==='مميز' ? '<span class="badge premium">⭐ مميز</span>' : '';
+}
 function renderFilterMeta(){
   const b = state.browse;
   const active = [];
@@ -7784,9 +7851,9 @@ function buildCardTile(c){
     '</div>'+
     '<div class="badge-row">'+
       tierBadge(c.calcTier)+
-      (c.network?'<span class="badge">'+c.network+'</span>':'<span class="badge">شبكة غير محددة</span>')+
+      (networkLabel(c.network)?'<span class="badge">'+networkLabel(c.network)+'</span>':'<span class="badge">شبكة غير محددة</span>')+
       (c.loyaltyProgram?'<span class="badge">'+shortenProgramName(c.loyaltyProgram)+'</span>':'')+
-      (c.customerSegment==='مميز'?'<span class="badge premium">⭐ مميز</span>':'')+
+      tierOrSegmentBadgeHTML(c)+
     '</div>';
   attachFavStarHandlers(tile);
   return tile;
@@ -7988,7 +8055,7 @@ function openCardDetail(cardId){
 
   let html = '<div class="modal-header"><div><h2>'+card.name+'</h2><div class="card-bank">'+bankName(card)+'</div></div>'+
     '<div style="display:flex;gap:8px">'+favStarHTML(card.id)+'<button class="modal-close" id="modalCloseBtn" aria-label="إغلاق">✕</button></div></div>';
-  html += '<div class="badge-row">'+tierBadge(card.calcTier)+(card.network?'<span class="badge">'+card.network+'</span>':'')+(card.loyaltyProgram?'<span class="badge">'+shortenProgramName(card.loyaltyProgram)+'</span>':'')+(card.customerSegment?'<span class="badge'+(card.customerSegment==='مميز'?' premium':'')+'">'+card.customerSegment+'</span>':'')+'</div>';
+  html += '<div class="badge-row">'+tierBadge(card.calcTier)+(networkLabel(card.network)?'<span class="badge">'+networkLabel(card.network)+'</span>':'')+(card.loyaltyProgram?'<span class="badge">'+shortenProgramName(card.loyaltyProgram)+'</span>':'')+tierOrSegmentBadgeHTML(card)+'</div>';
 
   if(card.calcTier==='precise'){
     const p = CARD_DB.precise[card.id];
