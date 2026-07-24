@@ -42,7 +42,7 @@ h1,h2,h3{ margin:0; color:var(--brand); }
 [data-theme="dark"] h1,[data-theme="dark"] h2,[data-theme="dark"] h3{ color:var(--text); }
 
 /* ---------- layout ---------- */
-#app{ max-width:720px; margin:0 auto; padding-bottom:110px; min-height:100vh; }
+#app{ max-width:720px; margin:0 auto; padding-bottom:32px; min-height:100vh; }
 .topbar{
   position:sticky; top:0; z-index:20; background:var(--bg);
   padding:14px 16px 10px; border-bottom:1px solid var(--border);
@@ -243,6 +243,31 @@ h1,h2,h3{ margin:0; color:var(--brand); }
 .applied-chip .x{ cursor:pointer; color:var(--text2); font-weight:700; padding:10px 8px; margin:-10px -8px; }
 .facet-hint{ font-size:13px; color:var(--text2); margin:2px 2px 0; }
 
+/* ---------- bank autocomplete (تصفح البطاقات → البنك) ---------- */
+.autocomplete-wrap{ position:relative; }
+.autocomplete-clear{
+  position:absolute; inset-inline-end:6px; top:50%; transform:translateY(-50%);
+  width:32px; height:32px; border-radius:8px; border:none; background:transparent;
+  color:var(--text2); font-size:15px; display:flex; align-items:center; justify-content:center;
+}
+.autocomplete-dropdown{
+  position:absolute; top:calc(100% + 4px); left:0; right:0; z-index:30;
+  background:var(--surface); border:1px solid var(--border); border-radius:14px;
+  box-shadow:var(--shadow); max-height:280px; overflow-y:auto; padding:6px;
+}
+.autocomplete-dropdown.hidden{ display:none; }
+.autocomplete-item{
+  display:flex; justify-content:space-between; align-items:center; width:100%; text-align:right;
+  background:transparent; border:none; border-radius:10px; padding:11px 10px; font-size:14px;
+  color:var(--text); min-height:44px;
+}
+.autocomplete-item:hover, .autocomplete-item.active{ background:var(--bg); }
+.autocomplete-item.active{ font-weight:700; color:var(--brand); }
+[data-theme="dark"] .autocomplete-item.active{ color:var(--accent); }
+.autocomplete-item.all-option{ font-weight:700; border-bottom:1px solid var(--border); border-radius:10px 10px 0 0; margin-bottom:4px; }
+.autocomplete-item .count{ font-size:12px; color:var(--text2); flex-shrink:0; margin-inline-start:8px; white-space:nowrap; }
+.autocomplete-empty{ padding:14px 10px; text-align:center; color:var(--text2); font-size:13px; }
+
 /* ---------- persona / home screen ---------- */
 .persona-list{ display:flex; flex-direction:column; gap:10px; margin-top:14px; }
 .persona-btn{
@@ -269,10 +294,12 @@ h1,h2,h3{ margin:0; color:var(--brand); }
 .suggest-item .cat{ font-size:11.5px; color:var(--text2); }
 
 /* ---------- disclaimer ---------- */
+/* ثابت تحت الـheader مباشرة بتدفق الصفحة العادي — لا يعوم بأسفل الشاشة ولا يحتاج المستخدم
+   يضغط أو يمرّر عشان يشوفه، وتاريخ آخر تحديث ظاهر مباشرة بدل ما يكون مدفون داخل مودال. */
 .disclaimer-bar{
-  position:fixed; bottom:0; left:0; right:0; z-index:15; background:var(--surface);
-  border-top:1px solid var(--border); padding:8px 16px; font-size:13px; color:var(--text2);
-  text-align:center; max-width:720px; margin:0 auto;
+  background:var(--surface);
+  border-bottom:1px solid var(--border); padding:8px 16px; font-size:12.5px; color:var(--text2);
+  text-align:center;
 }
 .disclaimer-bar u{ color:var(--accent); cursor:pointer; font-weight:700; }
 .disclaimer-detail h3{ font-size:15px; margin-top:16px; }
@@ -332,6 +359,11 @@ h1,h2,h3{ margin:0; color:var(--brand); }
       <button class="tab-btn" data-tab="browse">تصفح البطاقات</button>
       <button class="tab-btn" data-tab="favorites">⭐ المفضلة<span class="tab-count" id="favTabCount"></span></button>
     </div>
+  </div>
+
+  <!-- ===================== DISCLAIMER BAR — ثابت تحت الـheader مباشرة، مو عائم بأسفل الشاشة ===================== -->
+  <div class="disclaimer-bar">
+    ⓘ مرجع معلوماتي فقط وليس نصيحة مالية · آخر تحديث للبيانات: <b id="disclaimerLastUpdatedInline"></b> · <u id="disclaimerDetailLink">التفاصيل ومصدر البيانات</u>
   </div>
 
   <!-- ===================== HOME / PERSONA SCREEN ===================== -->
@@ -423,8 +455,11 @@ h1,h2,h3{ margin:0; color:var(--brand); }
     <input class="search-box" id="cardSearch" placeholder="ابحث باسم البطاقة، البنك، أو برنامج الولاء...">
 
     <div class="section-label">البنك</div>
-    <input class="search-box" id="bankSearch" placeholder="ابحث عن بنك..." style="margin-bottom:8px;">
-    <div class="chip-scroll" id="bankChips"></div>
+    <div class="autocomplete-wrap" id="bankAutocompleteWrap">
+      <input class="search-box" id="bankSearch" placeholder="كل البنوك — اكتب للبحث" autocomplete="off">
+      <button class="autocomplete-clear hidden" id="bankSearchClear" aria-label="مسح اختيار البنك" title="مسح اختيار البنك">✕</button>
+      <div class="autocomplete-dropdown hidden" id="bankDropdown"></div>
+    </div>
     <div class="facet-hint" id="bankFacetHint"></div>
 
     <div class="section-label">برنامج الولاء</div>
@@ -468,18 +503,13 @@ h1,h2,h3{ margin:0; color:var(--brand); }
 
 </div>
 
-<!-- ===================== DISCLAIMER BAR ===================== -->
-<div class="disclaimer-bar">
-  ⓘ مرجع معلوماتي فقط وليس نصيحة مالية · تحقق من شروط البنك الرسمية قبل التقديم · <u id="disclaimerDetailLink">عرض التفاصيل</u>
-</div>
-
 <!-- ===================== DISCLAIMER DETAIL MODAL ===================== -->
 <div class="modal-backdrop hidden" id="disclaimerModal">
   <div class="modal-sheet disclaimer-detail">
     <div class="modal-header"><h2>إخلاء المسؤولية</h2><button class="modal-close" id="disclaimerModalClose" aria-label="إغلاق">✕</button></div>
     <p>هذه الأداة مرجع معلوماتي لمقارنة بطاقات ائتمانية سعودية بناءً على بيانات مُجمَّعة من مواقع البنوك الرسمية وقت آخر مراجعة — وهي <b>ليست</b> نصيحة مالية ولا تُغني عن التحقق من الشروط والأحكام الرسمية للبنك مباشرة قبل أي تقديم فعلي.</p>
     <h3>الأرقام تقديرية أحيانًا</h3>
-    <p>البطاقة الوحيدة الموسومة "دقيق" مبنية على بيانات مؤكدة حسب فئة الصرف. باقي البطاقات ("تقديري") تعتمد على معدل عام محلي/دولي معلن من البنك — قد لا يعكس شروطًا خاصة بتاجر معيّن أو حدًا أقصى للاكتساب.</p>
+    <p>البطاقات الموسومة "دقيق" مبنية على بيانات مؤكدة حسب فئة الصرف تحديدًا. باقي البطاقات ("معدل عام معلن") تعتمد على معدل عام محلي/دولي معلن رسميًا من البنك، وليس رقمًا خاصًا بفئة الصرف — قد لا يعكس شروطًا خاصة بتاجر معيّن أو حدًا أقصى للاكتساب.</p>
     <h3>السحب النقدي سلفة، وليس شراء</h3>
     <p>السحب النقدي ببطاقة الائتمان يُعامَل غالبًا كسلفة نقدية فورية الربح (بدون فترة سماح) مع رسوم نسبية منفصلة — بعكس المشتريات العادية. لا تعتمد على "0% رسوم دولية" كضمان لتكلفة سحب صفرية.</p>
     <h3>خطر السداد الأدنى فقط</h3>
@@ -6180,7 +6210,7 @@ const CARD_DB = {
     },
     {
       "id": "gov_payments",
-      "ar": "دفعات حكومية",
+      "ar": "فواتير حكومية",
       "quick": false,
       "genericType": "special"
     },
@@ -6544,11 +6574,11 @@ const state = {
     categoryId:null, rewardType:null, program:null, amount:500,
     openGroupId:null, presetProgram:null
   },
-  browse: { query:'', bank:null, loyalty:null, network:null, rewardType:null, segment:null, costFilter:null, availability:null, bankQuery:'' }
+  browse: { query:'', bank:null, loyalty:null, network:null, rewardType:null, segment:null, costFilter:null, availability:null }
 };
 
 // ==================== favorites ====================
-const FAV_MAX = 5;
+const FAV_MAX = 10;
 function loadFavorites(){
   try{
     const raw = store.getItem('favorites');
@@ -6569,7 +6599,7 @@ function toggleFavorite(cardId){
     showToast('أُزيلت من المفضلة');
   } else {
     if(state.favorites.length >= FAV_MAX){
-      showToast('وصلت الحد الأقصى (5 بطاقات) — احذف بطاقة من المفضلة أولاً');
+      showToast('وصلت الحد الأقصى ('+FAV_MAX+' بطاقات) — احذف بطاقة من المفضلة أولاً');
       return false;
     }
     state.favorites.push(cardId);
@@ -6703,9 +6733,11 @@ document.querySelectorAll('.persona-btn').forEach(btn=>{
 function resetBrowseFilters(){
   state.browse.bank=null; state.browse.loyalty=null; state.browse.network=null;
   state.browse.rewardType=null; state.browse.segment=null; state.browse.costFilter=null;
-  state.browse.availability=null; state.browse.query=''; state.browse.bankQuery='';
+  state.browse.availability=null; state.browse.query='';
   document.getElementById('cardSearch').value='';
   document.getElementById('bankSearch').value='';
+  document.getElementById('bankSearchClear').classList.add('hidden');
+  closeBankDropdown();
 }
 function renderAllBrowseFacets(){
   renderBankChips(); renderLoyaltyChips(); renderNetworkChips(); renderRewardTypeBrowseChips();
@@ -6816,8 +6848,8 @@ document.getElementById('costCashBtn').addEventListener('click', ()=>{ state.cal
 const CATEGORY_GROUPS = [
   {id:'daily',  icon:'🛒', label:'يومي ومحلي',   cats:['supermarket','dining','local_general','sweets','clothing','gifts','beauty','variety']},
   {id:'travel', icon:'✈️', label:'سفر وطيران',   cats:['intl_general','saudia','car_rental','public_transport']},
-  {id:'bills',  icon:'🧾', label:'فواتير وتعليم', cats:['bills','education','real_estate']},
-  {id:'gov',    icon:'🚗', label:'سيارات وحكومي', cats:['cars','gov_payments']},
+  {id:'bills',  icon:'🧾', label:'فواتير وتعليم', cats:['bills','education','real_estate','gov_payments']},
+  {id:'cars',   icon:'🚗', label:'سيارات',        cats:['cars']},
   {id:'fuel',   icon:'⛽', label:'بنزين',         cats:['fuel']},
   {id:'cash',   icon:'🏧', label:'سحب نقدي',      cats:['cash_withdrawal']},
 ].map(g=>({...g, cats: g.cats.map(id=>CATEGORY_BY_ID[id]).filter(Boolean)}));
@@ -6930,9 +6962,18 @@ function renderRewardTypeChips(){
     chip.textContent=opt.label;
     chip.addEventListener('click', ()=>{
       state.calc.rewardType=opt.id;
-      if(!state.calc.presetProgram) state.calc.program=null;
+      if(!state.calc.presetProgram){
+        state.calc.program=null;
+      } else {
+        // برنامج الولاء المحدد مسبقًا (مثل "الفرسان") مرتبط بنوع مكافأة معيّن (أميال) —
+        // لو ما عاد يطابق نوع المكافأة الجديد المختار، لازم يتصفّر معه، وإلا يضل عالقًا
+        // بفلتر ما عاد له معنى منطقي (مثال: الفرسان ظاهر تحت "نقاط" أو "كاش باك").
+        const stillValid = CARD_DB.cards.some(c=> c.loyaltyProgram===state.calc.presetProgram && cardMatchesRewardBucket(c, opt.id));
+        if(!stillValid){ state.calc.program=null; state.calc.presetProgram=null; }
+      }
       renderRewardTypeChips();
       renderProgramChips();
+      renderSelectedCategoryPill();
       renderCalcResults();
     });
     wrap.appendChild(chip);
@@ -7110,7 +7151,10 @@ function computeForCard(card, categoryId, amount){
   if(card.calcTier==='estimated'){
     const type = cat.genericType;
     let rate=null;
-    if(type==='domestic' || type==='domestic_risky') rate = card.genericLocalRate;
+    // "special" (سيارات، فواتير حكومية): تُعامَل كمعدل محلي عام تقديري — نفس منطق السعودية
+    // (عملية تاجر سعودي عادية من ناحية شبكة البطاقة)، مع تنبيه صريح بالواجهة إنها قد تُستثنى
+    // فعليًا حتى لو لم يُذكر ذلك صراحة. هذا أفضل من إخفاء كل البطاقات التقديرية بالكامل.
+    if(type==='domestic' || type==='domestic_risky' || type==='special') rate = card.genericLocalRate;
     else if(type==='international') rate = card.genericIntlRate;
     if(!rate) return null;
     if(rate.kind==='cashback_pct'){
@@ -7121,6 +7165,39 @@ function computeForCard(card, categoryId, amount){
     }
   }
   return null;
+}
+
+// بطاقات "بدون مكافآت" (برق، D360، موبايلي باي...) — منتج مختلف كليًا عن بطاقات الاكتساب:
+// قيمتها تجنّب رسوم الصرف، مو تجميع نقاط/أميال. كانت غائبة تمامًا من كل شاشات الحاسبة
+// (calcTier:'unavailable' يستبعدها من eligibleCardsForCalc) رغم أنها معلومة مفيدة للمستخدم —
+// الآن تُعرض كبلاطة معلوماتية منفصلة، بدون ترتيب تنافسي مع بطاقات المكافآت.
+const FX_RATE_DISCLAIMER = 'صفر عمولة تحويل، لكن سعر الصرف نفسه (مو رسوم إضافية) يحدده فيزا/ماستركارد يوميًا.';
+// الفئات اللي فعلاً يهمّها الصرف الأجنبي — نتفادى عرض البطاقة "بدون مكافآت" بفئات محلية بحتة
+// (بقالة، مطاعم...) حيث معلومة "0% دولي" لا قيمة لها ولا علاقة.
+const FX_RELEVANT_CATEGORY_IDS = new Set(['intl_general','saudia','cash_withdrawal','car_rental']);
+function feeOnlyCardsFromPool(pool){
+  return pool.filter(c=> c.feeSignals && c.feeSignals.zeroIntlFeeClaimed);
+}
+function makeFeeOnlyTile(card){
+  const row=document.createElement('div');
+  row.className='result-row';
+  row.addEventListener('click', ()=>openCardDetail(card.id));
+  makeAccessibleClickable(row, 'عرض تفاصيل '+card.name);
+  row.innerHTML =
+    '<div class="result-rank">ⓘ</div>'+
+    '<div class="result-info"><div class="name">'+card.name+'</div><div class="sub">'+bankName(card)+' · <span class="badge" style="padding:1px 6px;">0% رسوم دولية</span></div><div class="sub" style="margin-top:3px;">'+FX_RATE_DISCLAIMER+'</div></div>';
+  return row;
+}
+function renderFeeOnlyCardsSection(wrap, pool, categoryId){
+  if(categoryId!=null && !FX_RELEVANT_CATEGORY_IDS.has(categoryId)) return;
+  const feeOnlyCards = feeOnlyCardsFromPool(pool);
+  if(!feeOnlyCards.length) return;
+  wrap.appendChild(document.createElement('hr')).className='result-divider';
+  const title=document.createElement('div');
+  title.className='result-section-title';
+  title.innerHTML='<span class="dot"></span><h3>بطاقات بدون مكافآت، لكن برسوم صرف صفر</h3>';
+  wrap.appendChild(title);
+  feeOnlyCards.forEach(c=>wrap.appendChild(makeFeeOnlyTile(c)));
 }
 
 const MAX_CALC_AMOUNT = 10000000; // 10 مليون ريال — سقف معقول يمنع فقدان الدقة الرقمية بأرقام غير واقعية
@@ -7147,7 +7224,10 @@ function renderCalcResults(){
     return;
   }
 
-  const noEstimate = (cat.genericType==='special' || cat.genericType==='none');
+  // "special" (سيارات، فواتير حكومية) عاد ما يُخفي التقديري بالكامل — يعرضه مع تحذير صريح،
+  // نفس منطق السعودية. "none" (سحب نقدي) وحدها تبقى مُستبعدة كليًا (حقيقة عامة عن السحب النقدي
+  // بمعظم البطاقات تقريبًا، مو مجرد نقص بيانات).
+  const noEstimate = (cat.genericType==='none');
 
   const preciseCards = eligibleCardsForCalc().filter(c=>c.calcTier==='precise');
   // بطاقة "مستبعدة" (rate=0) لهذي الفئة تُستثنى من الترتيب تمامًا — عرضها كـ"الترتيب 1" بقيمة صفر
@@ -7192,7 +7272,7 @@ function renderCalcResults(){
     if(estRows.length){
       const title=document.createElement('div');
       title.className='result-section-title';
-      title.innerHTML='<span class="dot estimated"></span><h3>تقديري — معدل عام محلي/دولي، وليس حسب الفئة تحديدًا</h3>';
+      title.innerHTML='<span class="dot estimated"></span><h3>معدل عام معلن — محلي/دولي، وليس حسب الفئة تحديدًا</h3>';
       wrap.appendChild(title);
       const groups = {};
       estRows.forEach(x=>{ const u=x.r.unit; (groups[u]=groups[u]||[]).push(x); });
@@ -7221,6 +7301,12 @@ function renderCalcResults(){
         warn.textContent='⚠ كثير من البطاقات تستثني محطات الوقود من الاكتساب حتى لو لم يُذكر ذلك صراحة بمصدرنا — الأرقام أعلاه افتراضية على المعدل العام، تحقق من شروط بطاقتك الفعلية قبل الاعتماد عليها.';
         wrap.appendChild(warn);
       }
+      if(cat.genericType==='special'){
+        const warn=document.createElement('div');
+        warn.className='warn-banner';
+        warn.textContent='⚠ هذا بند بشروط تاجر خاصة — كثير من البنوك تستثني فئات زي هذي من الاكتساب كليًا أو تحدّها بسقف منفصل حتى لو لم يُذكر ذلك صراحة بمصدرنا. الأرقام أعلاه معدل عام تقديري فقط، تحقق من شروط بطاقتك الفعلية قبل الاعتماد عليها.';
+        wrap.appendChild(warn);
+      }
     } else if(!preciseRows.length){
       const empty=document.createElement('div');
       empty.className='empty-state';
@@ -7228,6 +7314,7 @@ function renderCalcResults(){
       wrap.appendChild(empty);
     }
   }
+  renderFeeOnlyCardsSection(wrap, CARD_DB.cards, categoryId);
 }
 
 // Saudia is a "special" category with no per-merchant data except the one precise
@@ -7258,7 +7345,7 @@ function isPureMilesType(card){
   const hasPoints = card.rewardType.includes('نقاط') || card.rewardType.includes('نقطة');
   return hasMiles && !hasPoints;
 }
-function renderSaudiaResults(wrap, amount, pool){
+function renderSaudiaResults(wrap, amount, pool, feeOnlyPool){
   // split by reward currency: miles vs points/cashback
   // pool اختياري: يسمح لحاسبة المفضلة باستخدام نفس منطق التصنيف على بطاقاتها الخمس فقط
   const basePool = pool || eligibleCardsForCalc();
@@ -7292,6 +7379,7 @@ function renderSaudiaResults(wrap, amount, pool){
   wrap.appendChild(note);
   wrap.appendChild(document.createElement('hr')).className='result-divider';
   section(pointsCards, 'أفضل 5 — نقاط / مكافآت / كاش باك', 'gold');
+  renderFeeOnlyCardsSection(wrap, feeOnlyPool || CARD_DB.cards, 'saudia');
 }
 
 function makeResultRow(card, r, rank){
@@ -7309,7 +7397,7 @@ function makeResultRow(card, r, rank){
   }
   row.innerHTML =
     '<div class="result-rank">'+rank+'</div>'+
-    '<div class="result-info"><div class="name">'+card.name+'</div><div class="sub">'+bankName(card)+(card.calcTier==='precise'?' · <span class="badge precise" style="padding:1px 6px;">دقيق</span>':' · <span class="badge estimated" style="padding:1px 6px;">تقديري</span>')+'</div></div>'+
+    '<div class="result-info"><div class="name">'+card.name+'</div><div class="sub">'+bankName(card)+(card.calcTier==='precise'?' · <span class="badge precise" style="padding:1px 6px;">دقيق</span>':' · <span class="badge estimated" style="padding:1px 6px;">معدل عام</span>')+'</div></div>'+
     '<div class="result-value">'+valueHtml+'</div>';
   return row;
 }
@@ -7375,7 +7463,7 @@ function renderCostResults(){
     });
     const note=document.createElement('div');
     note.className='info-note';
-    note.textContent='هذا الجدول يعرض فقط البطاقات التي لدينا بيانات رسوم سحب صريحة لها — بقية البطاقات ("تقديري"/"غير متوفر" بالتصفح) لا تُعرض هنا تفاديًا لتقدير غير موثوق حول بند حساس ماليًا.';
+    note.textContent='هذا الجدول يعرض فقط البطاقات التي لدينا بيانات رسوم سحب صريحة لها — بقية البطاقات ("معدل عام"/"غير موثّق" بالتصفح) لا تُعرض هنا تفاديًا لتقدير غير موثوق حول بند حساس ماليًا.';
     wrap.appendChild(note);
   }
 }
@@ -7391,33 +7479,92 @@ function candidateProgramsForBank(bankId){
   CARD_DB.cards.filter(c=>c.bankId===bankId).forEach(c=>{ if(c.loyaltyProgram) set.add(c.loyaltyProgram); });
   return set;
 }
-function renderBankChips(){
-  const wrap = document.getElementById('bankChips');
-  wrap.innerHTML='';
-  const q = state.browse.bankQuery.trim();
+// ==================== bank autocomplete (تصفح البطاقات → البنك) ====================
+// يحل مكان نمط "رقائق + زر المزيد يفتح sheet": حقل بحث حقيقي (typeahead) — يكتب المستخدم
+// بالحقل مباشرة، تظهر قائمة منسدلة بالنتائج المطابقة تحته فورًا، يضغط فيختار.
+function bankAutocompleteItems(query){
+  const q = query.trim();
   const allowedByLoyalty = candidateBanksForLoyalty(state.browse.loyalty);
-  const allChip = document.createElement('button');
-  allChip.className='chip'+(state.browse.bank===null?' active':'');
-  allChip.textContent='كل البنوك';
-  allChip.addEventListener('click', ()=>{ state.browse.bank=null; renderBankChips(); renderLoyaltyChips(); renderCardResults(); });
-  wrap.appendChild(allChip);
-  CARD_DB.banks
-    .filter(b=> !q || b.ar.includes(q) || b.en.toLowerCase().includes(q.toLowerCase()))
+  return CARD_DB.banks
     .filter(b=> !allowedByLoyalty || allowedByLoyalty.has(b.id))
-    .forEach(b=>{
-      const count = CARD_DB.cards.filter(c=>c.bankId===b.id && (!state.browse.loyalty || c.loyaltyProgram===state.browse.loyalty)).length;
-      const chip=document.createElement('button');
-      chip.className='chip'+(state.browse.bank===b.id?' active':'');
-      chip.innerHTML = b.ar + ' <span class="count">'+count+'</span>';
-      chip.addEventListener('click', ()=>{ state.browse.bank=b.id; renderBankChips(); renderLoyaltyChips(); renderCardResults(); });
-      wrap.appendChild(chip);
-    });
+    .filter(b=> !q || b.ar.includes(q) || b.en.toLowerCase().includes(q.toLowerCase()))
+    .map(b=>({
+      bank:b,
+      count: CARD_DB.cards.filter(c=>c.bankId===b.id && (!state.browse.loyalty || c.loyaltyProgram===state.browse.loyalty)).length
+    }))
+    .sort((a,b)=>b.count-a.count);
+}
+function renderBankDropdownList(query){
+  const dd = document.getElementById('bankDropdown');
+  dd.innerHTML='';
+  const allOpt=document.createElement('button');
+  allOpt.type='button';
+  allOpt.className='autocomplete-item all-option'+(state.browse.bank===null?' active':'');
+  allOpt.textContent='كل البنوك';
+  allOpt.addEventListener('click', ()=> pickBank(null));
+  dd.appendChild(allOpt);
+  const items = bankAutocompleteItems(query);
+  if(!items.length){
+    const empty=document.createElement('div');
+    empty.className='autocomplete-empty';
+    empty.textContent='لا توجد بنوك مطابقة';
+    dd.appendChild(empty);
+    return;
+  }
+  items.forEach(({bank,count})=>{
+    const item=document.createElement('button');
+    item.type='button';
+    item.className='autocomplete-item'+(state.browse.bank===bank.id?' active':'');
+    item.innerHTML = '<span>'+bank.ar+'</span><span class="count">'+count+' بطاقة</span>';
+    item.addEventListener('click', ()=> pickBank(bank.id));
+    dd.appendChild(item);
+  });
+}
+function openBankDropdown(){
+  // عند التركيز نعرض القائمة كاملة (مو مفلترة بنص اسم البنك المعروض حاليًا بالحقل) —
+  // يقدر المستخدم يشوف كل الخيارات فورًا بدل ما يحتاج يمسح النص أولاً.
+  renderBankDropdownList(state.browse.bank ? '' : document.getElementById('bankSearch').value);
+  document.getElementById('bankDropdown').classList.remove('hidden');
+}
+function closeBankDropdown(){
+  document.getElementById('bankDropdown').classList.add('hidden');
+}
+function pickBank(bankId){
+  state.browse.bank = bankId;
+  closeBankDropdown();
+  renderBankChips(); renderLoyaltyChips(); renderCardResults();
+}
+function renderBankChips(){
+  const input = document.getElementById('bankSearch');
+  const clearBtn = document.getElementById('bankSearchClear');
+  const selected = state.browse.bank ? BANK_BY_ID[state.browse.bank] : null;
+  if(selected){
+    input.value = selected.ar;
+    clearBtn.classList.remove('hidden');
+  } else if(document.activeElement !== input){
+    input.value = '';
+    clearBtn.classList.add('hidden');
+  }
   document.getElementById('bankFacetHint').textContent = state.browse.loyalty
     ? 'مفلترة حسب برنامج الولاء المختار — البنوك التي لا تُصدره غير ظاهرة.' : '';
 }
+document.getElementById('bankSearch').addEventListener('focus', openBankDropdown);
 document.getElementById('bankSearch').addEventListener('input', (e)=>{
-  state.browse.bankQuery = e.target.value;
-  renderBankChips();
+  // الكتابة فوق اسم بنك مختار تعني بحث جديد — نفضّي الاختيار السابق بدل ما يضل عالقًا بصمت.
+  if(state.browse.bank){ state.browse.bank=null; renderLoyaltyChips(); renderCardResults(); }
+  renderBankDropdownList(e.target.value);
+  document.getElementById('bankDropdown').classList.remove('hidden');
+});
+document.getElementById('bankSearch').addEventListener('keydown', (e)=>{
+  if(e.key==='Escape'){ closeBankDropdown(); e.target.blur(); }
+});
+document.getElementById('bankSearchClear').addEventListener('click', (e)=>{
+  e.stopPropagation();
+  pickBank(null);
+});
+document.addEventListener('click', (e)=>{
+  const wrap = document.getElementById('bankAutocompleteWrap');
+  if(wrap && !wrap.contains(e.target)) closeBankDropdown();
 });
 
 function renderLoyaltyChips(){
@@ -7495,7 +7642,7 @@ function renderCostFilterChips(){
 function renderAvailabilityChips(){
   const wrap = document.getElementById('availabilityChips');
   wrap.innerHTML='';
-  [{id:null,label:'الكل'},{id:'precise',label:'دقيق'},{id:'estimated',label:'تقديري'},{id:'unavailable',label:'غير متوفر'}].forEach(opt=>{
+  [{id:null,label:'الكل'},{id:'precise',label:'دقيق'},{id:'estimated',label:'معدل عام'},{id:'unavailable',label:'غير موثّق'}].forEach(opt=>{
     const count = CARD_DB.cards.filter(c=> opt.id===null?true:c.calcTier===opt.id).length;
     const chip=document.createElement('button');
     chip.className='chip'+(state.browse.availability===opt.id?' active':'');
@@ -7504,8 +7651,19 @@ function renderAvailabilityChips(){
     wrap.appendChild(chip);
   });
 }
+let _prevCardSearchQuery = '';
 document.getElementById('cardSearch').addEventListener('input', (e)=>{
-  state.browse.query = e.target.value.trim();
+  const newQuery = e.target.value.trim();
+  // مسح نص البحث (من نص فعلي لصفر) يعني المستخدم يبغى يبحث عن شي ثاني — فلتر البنك/برنامج
+  // الولاء اللي انضاف أثناء نفس جلسة البحث لازم يروح معه، وإلا يضل عالقًا يشوّش بحث تالٍ.
+  if(_prevCardSearchQuery && !newQuery){
+    state.browse.bank = null;
+    state.browse.loyalty = null;
+    renderBankChips();
+    renderLoyaltyChips();
+  }
+  _prevCardSearchQuery = newQuery;
+  state.browse.query = newQuery;
   renderCardResults();
 });
 
@@ -7535,8 +7693,8 @@ function filteredCards(){
 }
 function tierBadge(tier){
   if(tier==='precise') return '<span class="badge precise">دقيق</span>';
-  if(tier==='estimated') return '<span class="badge estimated">تقديري</span>';
-  return '<span class="badge unavailable">بيانات غير متوفرة</span>';
+  if(tier==='estimated') return '<span class="badge estimated">معدل عام</span>';
+  return '<span class="badge unavailable">غير موثّق</span>';
 }
 function renderFilterMeta(){
   const b = state.browse;
@@ -7547,7 +7705,7 @@ function renderFilterMeta(){
   if(b.rewardType) active.push({key:'rewardType', label:b.rewardType, clear:()=>{ b.rewardType=null; renderRewardTypeBrowseChips(); }});
   if(b.segment) active.push({key:'segment', label:'العميل: '+b.segment, clear:()=>{ b.segment=null; renderSegmentChips(); }});
   if(b.costFilter) active.push({key:'costFilter', label:{zero_intl:'0% رسوم دولية',zero_annual:'بدون رسوم سنوية'}[b.costFilter], clear:()=>{ b.costFilter=null; renderCostFilterChips(); }});
-  if(b.availability) active.push({key:'availability', label:{precise:'دقيق',estimated:'تقديري',unavailable:'غير متوفر'}[b.availability], clear:()=>{ b.availability=null; renderAvailabilityChips(); }});
+  if(b.availability) active.push({key:'availability', label:{precise:'دقيق',estimated:'معدل عام',unavailable:'غير موثّق'}[b.availability], clear:()=>{ b.availability=null; renderAvailabilityChips(); }});
 
   const badge = document.getElementById('filterCountBadge');
   badge.textContent = active.length ? String(active.length) : '';
@@ -7698,18 +7856,27 @@ function renderFavCalcResults(){
     return;
   }
   const amount = Math.min(rawAmount, MAX_CALC_AMOUNT);
-  const favCards = state.favorites.map(id=>CARD_DB.cards.find(c=>c.id===id)).filter(c=>c && c.calcTier!=='unavailable');
+  // favCardsAll (بدون استبعاد unavailable) لازمة لاكتشاف بطاقات "بدون مكافآت" (برق/D360...)
+  // اللي calcTier حقها 'unavailable' أصلاً، فيُستبعدون من favCards العادية المستخدمة بالترتيب.
+  const favCardsAll = state.favorites.map(id=>CARD_DB.cards.find(c=>c.id===id)).filter(Boolean);
+  const favCards = favCardsAll.filter(c=>c.calcTier!=='unavailable');
 
   if(categoryId==='saudia'){
-    renderSaudiaResults(wrap, amount, favCards);
+    renderSaudiaResults(wrap, amount, favCards, favCardsAll);
   } else {
-    const noEstimate = (cat.genericType==='special' || cat.genericType==='none');
+    const noEstimate = (cat.genericType==='none');
     const rows = favCards
       .map(c=>({card:c, r:computeForCard(c, categoryId, amount)}))
       .filter(x=>x.r && !x.r.excluded);
     rows.sort((a,b)=>b.r.value-a.r.value);
     if(rows.length){
       rows.forEach((x,i)=>wrap.appendChild(makeResultRow(x.card, x.r, i+1)));
+      if(cat.genericType==='special'){
+        const warn=document.createElement('div');
+        warn.className='warn-banner';
+        warn.textContent='⚠ هذا بند بشروط تاجر خاصة — كثير من البنوك تستثنيه من الاكتساب كليًا حتى لو لم يُذكر ذلك صراحة بمصدرنا. الأرقام أعلاه معدل عام تقديري فقط.';
+        wrap.appendChild(warn);
+      }
     } else if(noEstimate){
       const note=document.createElement('div');
       note.className='info-note';
@@ -7721,6 +7888,7 @@ function renderFavCalcResults(){
       empty.textContent='ولا بطاقة من مفضلتك عندها بيانات لهذا البند حاليًا.';
       wrap.appendChild(empty);
     }
+    renderFeeOnlyCardsSection(wrap, favCardsAll, categoryId);
   }
 
   // فخ "العينة الصغيرة": نتيجة أفضل بطاقة بين 2-5 بطاقات قد تكون أضعف بكثير من
@@ -7759,7 +7927,7 @@ function renderFavoritesResults(){
   }
   wrap.innerHTML='';
   if(!state.favorites.length){
-    wrap.innerHTML='<div class="empty-state">لا توجد بطاقات مفضّلة بعد — اضغط ☆ على أي بطاقة بالتصفح أو نافذة التفاصيل لإضافتها هنا (حتى 5 بطاقات).</div>';
+    wrap.innerHTML='<div class="empty-state">لا توجد بطاقات مفضّلة بعد — اضغط ☆ على أي بطاقة بالتصفح أو نافذة التفاصيل لإضافتها هنا (حتى '+FAV_MAX+' بطاقات).</div>';
     return;
   }
   state.favorites.forEach(id=>{
@@ -7880,6 +8048,7 @@ document.getElementById('disclaimerModal').addEventListener('click', (e)=>{
   if(e.target.id==='disclaimerModal') e.currentTarget.classList.add('hidden');
 });
 document.getElementById('disclaimerLastUpdated').textContent = CARD_DB.generatedAt;
+document.getElementById('disclaimerLastUpdatedInline').textContent = CARD_DB.generatedAt;
 
 // ==================== init ====================
 renderCategoryTiles();
